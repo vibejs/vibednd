@@ -1,0 +1,25 @@
+<script setup lang="ts">
+import { ref, onScopeDispose } from '@usevibejs/ui';
+import { DragDropManager, Feedback } from '@dnd-kit/dom';
+import { isSortable } from '@dnd-kit/dom/sortable';
+import ProofItem from './ProofItem.vibe';
+const items = ref(['A', 'B', 'C', 'D']);
+const other = ref<string[]>([]);
+const unrelated = ref(0);
+const shown = ref(true);
+const manager = new DragDropManager();
+const overlay = document.createElement('div'); overlay.textContent = 'Moving item'; overlay.setAttribute('aria-hidden','true'); overlay.setAttribute('inert',''); overlay.style.cssText='padding:16px;background:#dce8ff;border:2px solid #4263eb;border-radius:8px';document.body.append(overlay);overlay.hidden=true;
+const feedback = manager.registry.plugins.get(Feedback)!; feedback.overlay = overlay; feedback.dropAnimation = null;
+const stopStart=manager.monitor.addEventListener('dragstart',()=>{overlay.hidden=false});
+const stopEnd=manager.monitor.addEventListener('dragend',(event)=>{
+ overlay.hidden=true;
+ const {source,target}=event.operation;
+ if(event.canceled || !source || !target || !isSortable(source) || !isSortable(target)) return;
+ const next = [...items.value]; const from=next.indexOf(String(source.id)); const to=next.indexOf(String(target.id));
+ if(from<0 || to<0) return; const [item]=next.splice(from,1); next.splice(to,0,item!);items.value=next;
+});
+onScopeDispose(()=>{stopStart();stopEnd(); manager.destroy();overlay.remove()});
+defineExpose({items, manager, shown, unrelated});
+</script>
+<template><main><h1>DOM ownership proof</h1><p data-order>{{ items.join(',') }}</p><button @click="unrelated++">Unrelated {{ unrelated }}</button><button @click="items = ['D','C','B','A']">Replace</button><button @click="items = items.filter(i => i !== 'A')">Remove A</button><button @click="items = ['X',...items]">Insert</button><button @click="shown = !shown">Toggle</button><ul v-if="shown" style="width:300px; padding:24px; list-style:none"><ProofItem v-for="(id,index) in items" :key="id" :id="id" :index="index" group="one" :manager="manager" /></ul><p>{{ other.length }}</p></main></template>
+<style>li[data-id]{background:#eee;margin:12px 0;padding:12px;display:flex;gap:24px}button:focus-visible{outline:3px solid #4263eb}</style>

@@ -1,0 +1,71 @@
+{
+  "name": "@usevibejs/dnd",
+  "version": "0.1.0",
+  "description": "Powerful Drag & Drop for Vibe.js — a headless modern dnd-kit DOM integration.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vibejs/vibednd.git"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sortable": {
+      "types": "./dist/sortable.d.ts",
+      "import": "./dist/sortable.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsdown",
+    "build:site": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings",
+    "fmt": "oxfmt",
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "test:package": "node scripts/package.ts",
+    "bench": "node benchmarks/run.ts",
+    "check": "oxfmt --check && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm build:site"
+  },
+  "dependencies": {
+    "@dnd-kit/abstract": "0.5.1",
+    "@dnd-kit/collision": "0.5.1",
+    "@dnd-kit/dom": "0.5.1",
+    "@dnd-kit/helpers": "0.5.1"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.3",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@usevibejs/compiler": "0.1.0",
+    "@usevibejs/language-tools": "0.1.0",
+    "@usevibejs/ui": "0.1.0",
+    "jsdom": "30.1.3",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "tsdown": "0.23.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "@usevibejs/ui": "^0.1.0"
+  },
+  "engines": {
+    "node": "^24.15.0 || >=26"
+  },
+  "packageManager": "pnpm@12.14.0"
+}
