@@ -1,0 +1,11 @@
+<script setup lang="ts">
+import { ref, useTemplateRef } from '@usevibejs/ui';
+import { useSortable } from '../../src/index.ts';
+const props=defineProps<{id:string;index:number;group:string;disabled?:boolean;label?:string}>();
+const element=useTemplateRef<HTMLElement>('element');
+const handle=useTemplateRef<HTMLButtonElement>('handle');
+const drag=useSortable({id:()=>props.id,index:()=>props.index,group:()=>props.group,element,handle,disabled:()=>props.disabled ?? false,data:()=>({kind:'task',label:props.label ?? props.id}),transition:null,type:'task',accept:'task'});
+const count=ref(0);
+defineExpose({drag});
+</script>
+<template><li ref="element" :data-item="id" :data-index="index" :data-group="group" :data-dragging="drag.isDragging.value" :data-over="drag.isOver.value"><button ref="handle" type="button" :aria-label="'Move '+id" :disabled="disabled" style="touch-action:none">⠿ {{ label || id }}</button><button type="button" @click="count++">Clicks {{ count }}</button><input :aria-label="'Edit '+id" /></li></template>
