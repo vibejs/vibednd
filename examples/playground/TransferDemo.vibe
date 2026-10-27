@@ -1,0 +1,33 @@
+<script setup lang="ts">
+import { ref, shallowRef } from '@usevibejs/ui';
+import { useDnd, useSortableGroup } from '@usevibejs/dnd';
+import SortZone from './SortZone.vibe';
+const context = useDnd();
+const status = ref('Move an item across containers, including the empty one.');
+const containers = shallowRef<Readonly<Record<string, readonly string[]>>>({
+  Inbox: ['Write brief', 'Explore ideas', 'Review draft'],
+  Planned: [],
+  Restricted: [],
+});
+useSortableGroup({
+  containers,
+  getId: (id) => id,
+  context,
+  onMove: (move) =>
+    (status.value = move.shouldCommit
+      ? `Moved ${move.itemId} from ${move.fromContainer} to ${move.toContainer}`
+      : 'Move canceled or rejected'),
+});
+</script>
+<template>
+  <div class="demo-transfer">
+    <SortZone
+      v-for="(items, id) in containers"
+      :key="id"
+      :id="String(id)"
+      :items="items"
+      :reject="id === 'Restricted'"
+    />
+  </div>
+  <p class="demo-status" role="status">{{ status }}</p>
+</template>

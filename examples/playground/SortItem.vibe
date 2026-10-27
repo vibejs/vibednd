@@ -1,0 +1,51 @@
+<script setup lang="ts">
+import { ref, useTemplateRef } from '@usevibejs/ui';
+import { useSortable } from '@usevibejs/dnd';
+const props = defineProps<{
+  id: string;
+  index: number;
+  group: string;
+  disabled?: boolean;
+  nested?: boolean;
+}>();
+const element = useTemplateRef<HTMLElement>('element');
+const handle = useTemplateRef<HTMLButtonElement>('handle');
+const drag = useSortable({
+  id: () => props.id,
+  index: () => props.index,
+  group: () => props.group,
+  element,
+  handle,
+  disabled: () => props.disabled ?? false,
+  type: 'demo:item',
+  accept: 'demo:item',
+  data: () => ({ label: props.id }),
+  transition: { duration: 160, idle: true },
+});
+const count = ref(0);
+</script>
+<template>
+  <li
+    ref="element"
+    class="demo-item"
+    :data-id="id"
+    :data-over="drag.isOver.value"
+    :data-dragging="drag.isDragging.value"
+  >
+    <button
+      ref="handle"
+      type="button"
+      :disabled="disabled"
+      :aria-label="'Move ' + id"
+      class="demo-handle"
+    >
+      ⠿</button
+    ><span>{{ id }}</span
+    ><span v-if="disabled" class="locked-label">Locked</span>
+    <div v-if="nested" class="nested-controls">
+      <input :aria-label="'Edit ' + id" placeholder="Type here" /><button @click="count++">
+        Clicked {{ count }}
+      </button>
+    </div>
+  </li>
+</template>

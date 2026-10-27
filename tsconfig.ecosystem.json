@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.examples.json",
+  "compilerOptions": {
+    "paths": {
+      "@usevibejs/dnd": ["./src/index.ts"],
+      "@usevibejs/query": ["../vibequery/dist/index.d.ts"],
+      "@usevibejs/motion": ["../vibemotion/dist/index.d.ts"],
+      "@usevibejs/auth": ["../vibeauth/dist/index.d.ts"]
+    }
+  },
+  "include": ["examples/integrations/*.vibe", "examples/integrations/main.ts"],
+  "exclude": []
+}

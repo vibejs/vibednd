@@ -1,0 +1,88 @@
+<script setup lang="ts">
+import { computed, ref } from '@usevibejs/ui';
+const pages = import.meta.glob<string>('../../docs/**/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const query = ref('');
+const selected = ref('../../docs/getting-started.md');
+const copied = ref(false);
+const entries = computed(() =>
+  Object.entries(pages)
+    .map(([path, text]) => ({
+      path,
+      text,
+      title:
+        text
+          .split('\n')
+          .find((line) => line.startsWith('# '))
+          ?.slice(2) ?? path,
+    }))
+    .filter((entry) =>
+      `${entry.title} ${entry.text}`.toLowerCase().includes(query.value.toLowerCase()),
+    ),
+);
+const current = computed(() => pages[selected.value] ?? Object.values(pages)[0] ?? '');
+const segments = computed(() =>
+  current.value.split('```').map((part, index) => ({
+    code: index % 2 === 1,
+    text: index % 2 === 1 ? part.slice(part.indexOf('\n') + 1).trim() : part.trim(),
+    language: part.slice(0, part.indexOf('\n')),
+  })),
+);
+async function copy(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    copied.value = true;
+  } catch {
+    copied.value = false;
+  }
+}
+</script>
+<template>
+  <div class="docs-page">
+    <aside class="docs-navigation">
+      <label
+        ><span class="sr-only">Search documentation</span
+        ><input
+          v-model="query"
+          placeholder="Search documentation…"
+          aria-label="Search documentation"
+      /></label>
+      <nav aria-label="Documentation">
+        <button
+          v-for="entry in entries"
+          :key="entry.path"
+          :aria-current="selected === entry.path ? 'page' : undefined"
+          @click="
+            selected = entry.path;
+            copied = false;
+          "
+        >
+          {{ entry.title }}
+        </button>
+      </nav>
+      <p v-if="!entries.length">No matches. Try an API name.</p>
+    </aside>
+    <article class="docs-article">
+      <div v-for="(segment, index) in segments" :key="index">
+        <div v-if="segment.code" class="code-block">
+          <div>
+            <span>{{ segment.language }}</span
+            ><button @click="copy(segment.text)">{{ copied ? 'Copied' : 'Copy' }}</button>
+          </div>
+          <pre><code>{{ segment.text }}</code></pre>
+        </div>
+        <div v-else class="docs-prose">
+          <template v-for="(line, index) in segment.text.split('\n')" :key="index"
+            ><h1 v-if="line.startsWith('# ')">{{ line.slice(2) }}</h1>
+            <h2 v-else-if="line.startsWith('## ')">{{ line.slice(3) }}</h2>
+            <h3 v-else-if="line.startsWith('### ')">{{ line.slice(4) }}</h3>
+            <p v-else-if="line">{{ line }}</p></template
+          >
+        </div>
+      </div>
+    </article>
+  </div>
+</template>

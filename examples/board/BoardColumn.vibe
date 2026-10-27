@@ -1,0 +1,100 @@
+<script setup lang="ts">
+import { computed, useTemplateRef } from '@usevibejs/ui';
+import { useSortable, useDroppable } from '@usevibejs/dnd';
+import type { Task } from './model.ts';
+import { names } from './model.ts';
+import TaskCard from './TaskCard.vibe';
+import Empty from '../ui/Empty.vibe';
+import Button from '../ui/Button.vibe';
+import DragHandle from '../ui/DragHandle.vibe';
+const props = defineProps<{
+  id: string;
+  index: number;
+  tasks: readonly Task[];
+  query: string;
+  priority: string;
+  assignee: string;
+}>();
+const emit = defineEmits<{ add: [group: string]; edit: [task: Task, group: string] }>();
+const element = useTemplateRef<HTMLElement>('element');
+const zone = useTemplateRef<HTMLElement>('zone');
+const handle = useTemplateRef<{ element: HTMLButtonElement | null }>('handle');
+const column = useSortable({
+  id: () => `column:${props.id}`,
+  index: () => props.index,
+  group: 'columns',
+  element,
+  handle: () => handle.value?.element,
+  type: 'column',
+  accept: 'column',
+  data: () => ({ id: props.id }),
+  transition: { duration: 160, idle: true },
+});
+const drop = useDroppable({
+  id: () => `zone:${props.id}`,
+  element: zone,
+  group: () => props.id,
+  index: () => props.tasks.length,
+  accept: 'task',
+  collisionPriority: 0,
+});
+const filtered = computed(
+  () => !!props.query || props.priority !== 'all' || props.assignee !== 'all',
+);
+const shown = computed(() =>
+  props.tasks
+    .map((task, index) => ({ task, index }))
+    .filter(
+      ({ task }) =>
+        (props.priority === 'all' || task.priority === props.priority) &&
+        (props.assignee === 'all' || task.assignee === props.assignee) &&
+        `${task.title} ${task.id} ${task.description}`
+          .toLowerCase()
+          .includes(props.query.toLowerCase()),
+    ),
+);
+</script>
+<template>
+  <section
+    ref="element"
+    :class="'board-column column-' + id"
+    :data-column="id"
+    :data-over="column.isOver.value"
+  >
+    <div class="column-rail"></div>
+    <header class="column-header">
+      <span class="status-dot"></span>
+      <h2>{{ names[id] }}</h2>
+      <span class="column-count">{{ tasks.length }}</span
+      ><DragHandle ref="handle" class="column-grip" :label="'Move column ' + names[id]" /><Button
+        variant="ghost"
+        size="icon-xs"
+        :aria-label="'Add task to ' + names[id]"
+        @click="emit('add', id)"
+        >+</Button
+      >
+    </header>
+    <div ref="zone" class="column-drop" :data-over="drop.isOver.value">
+      <ul class="task-list">
+        <TaskCard
+          v-for="entry in shown"
+          :key="entry.task.id"
+          :task="entry.task"
+          :index="entry.index"
+          :group="id"
+          :filtered="filtered"
+          @edit="(task, group) => emit('edit', task, group)"
+        />
+      </ul>
+      <Empty v-if="!shown.length" class="column-empty"
+        ><span class="empty-mark" aria-hidden="true">＋</span>
+        <p>{{ filtered ? 'No matching tasks' : 'Room for what’s next' }}</p>
+        <Button v-if="!filtered" variant="ghost" size="sm" @click="emit('add', id)"
+          >Add a task</Button
+        ></Empty
+      ><Button variant="ghost" class="add-card" @click="emit('add', id)"
+        ><span aria-hidden="true">＋</span> Add task</Button
+      >
+    </div>
+  </section>
+</template>

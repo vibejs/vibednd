@@ -1,0 +1,79 @@
+<script setup lang="ts">
+import { computed, ref, useTemplateRef } from '@usevibejs/ui';
+import {
+  useDnd,
+  useDraggable,
+  useDndMonitor,
+  RestrictToHorizontalAxis,
+  RestrictToElement,
+  SnapModifier,
+} from '@usevibejs/dnd';
+import DropTarget from './DropTarget.vibe';
+const props = defineProps<{ kind: string }>();
+const context = useDnd();
+const element = useTemplateRef<HTMLElement>('element');
+const area = useTemplateRef<HTMLElement>('area');
+const status = ref('Drag the parcel or focus it and press Space.');
+const strategy = ref('pointer');
+const modifiers = computed(() =>
+  props.kind === 'Constraints'
+    ? [
+        RestrictToHorizontalAxis,
+        RestrictToElement.configure({ element: area.value }),
+        SnapModifier.configure({ size: 24 }),
+      ]
+    : undefined,
+);
+const drag = useDraggable({
+  id: 'parcel',
+  element,
+  type: 'parcel',
+  data: { label: 'Design files' },
+  modifiers,
+  context,
+});
+useDndMonitor(
+  {
+    onDragStart() {
+      status.value = 'Parcel picked up';
+    },
+    onDragEnd(event) {
+      status.value = event.canceled
+        ? 'Delivery canceled'
+        : event.accepted
+          ? `Delivered to ${event.operation.target?.id}`
+          : 'No accepted destination';
+    },
+  },
+  context,
+);
+</script>
+<template>
+  <div ref="area" class="parcel-area">
+    <div
+      ref="element"
+      tabindex="0"
+      aria-label="Move design files"
+      class="parcel"
+      :data-dragging="drag.isDragging.value"
+    >
+      <span class="parcel-icon" aria-hidden="true">▧</span><strong>Design files</strong
+      ><span>Pick me up</span>
+    </div>
+    <div v-if="kind === 'Drop zones' || kind === 'Collision strategies'" class="parcel-targets">
+      <DropTarget id="Design" :strategy="strategy" /><DropTarget
+        id="Archive"
+        :strategy="strategy"
+      /><DropTarget id="Restricted" :accepted="false" :strategy="strategy" />
+    </div>
+  </div>
+  <label v-if="kind === 'Collision strategies'"
+    >Collision strategy
+    <select v-model="strategy">
+      <option value="pointer">Pointer intersection</option>
+      <option value="center">Closest center</option>
+      <option value="shape">Shape intersection</option>
+    </select></label
+  >
+  <p class="demo-status" role="status">{{ status }}</p>
+</template>

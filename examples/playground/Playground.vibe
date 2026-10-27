@@ -1,0 +1,72 @@
+<script setup lang="ts">
+import { ref } from '@usevibejs/ui';
+import SortableDemo from './SortableDemo.vibe';
+import TransferDemo from './TransferDemo.vibe';
+import DraggableDemo from './DraggableDemo.vibe';
+const examples = [
+  'Draggable',
+  'Drop zones',
+  'Vertical list',
+  'Horizontal list',
+  'Grid',
+  'Multi-container',
+  'Nested controls',
+  'Handles & disabled',
+  'Dashboard',
+  'Keyboard sorting',
+  'Constraints',
+  'Auto-scrolling',
+  'Collision strategies',
+  'Drag overlay',
+];
+const selected = ref('Vertical list');
+const sortKinds = [
+  'Vertical list',
+  'Horizontal list',
+  'Grid',
+  'Nested controls',
+  'Handles & disabled',
+  'Dashboard',
+  'Keyboard sorting',
+  'Auto-scrolling',
+];
+</script>
+<template>
+  <div class="playground-page">
+    <div class="eyebrow">PLAYGROUND</div>
+    <h1>Put it in motion.</h1>
+    <p class="page-lead">
+      Real interactions. Native Vibe components. Try a handle, a keyboard, or a different
+      destination.
+    </p>
+    <div class="example-tabs">
+      <button
+        v-for="name in examples"
+        :key="name"
+        :aria-pressed="selected === name"
+        @click="selected = name"
+      >
+        {{ name }}
+      </button>
+    </div>
+    <section class="example-stage">
+      <header>
+        <h2>{{ selected }}</h2>
+        <span class="demo-label">LIVE EXAMPLE</span>
+      </header>
+      <SortableDemo
+        v-if="sortKinds.includes(selected)"
+        :key="selected"
+        :kind="selected"
+      /><TransferDemo v-else-if="selected === 'Multi-container'" /><DraggableDemo
+        v-else
+        :key="selected"
+        :kind="selected"
+      />
+    </section>
+    <p class="subtle">
+      Use Space or Enter to pick up and drop. Arrow keys move between targets. Escape cancels. Touch
+      handles use a long press.
+    </p>
+  </div>
+</template>

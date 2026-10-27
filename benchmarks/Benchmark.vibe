@@ -1,0 +1,53 @@
+<script setup lang="ts">
+import { computed, onScopeDispose, shallowRef, watch } from '@usevibejs/ui';
+import { useDnd, useSortableGroup } from '../src/index.ts';
+import SortZone from '../examples/playground/SortZone.vibe';
+const params = new URLSearchParams(location.search);
+const count = Math.min(2000, Math.max(1, Number(params.get('bench')) || 100));
+const groups = Math.max(1, Number(params.get('groups')) || 1);
+const context = useDnd({ feedback: { label: (source) => String(source.id) } });
+const containers = shallowRef<Readonly<Record<string, readonly string[]>>>(
+  Object.fromEntries(
+    Array.from({ length: groups }, (_, g) => [
+      `Group ${g + 1}`,
+      Array.from(
+        { length: Math.ceil(count / groups) },
+        (_, i) => `Item ${g * Math.ceil(count / groups) + i}`,
+      ).filter((id) => Number(id.slice(5)) < count),
+    ]),
+  ),
+);
+useSortableGroup({ containers, getId: (id) => id, context });
+const counters = { moves: 0, activeUpdates: 0, targetUpdates: 0 };
+const stop = context.engine.monitor.addEventListener('dragmove', () => counters.moves++);
+onScopeDispose(stop);
+watch(context.active, () => counters.activeUpdates++, { flush: 'sync' });
+watch(context.over, () => counters.targetUpdates++, { flush: 'sync' });
+const total = computed(() => Object.values(containers.value).flat().length);
+defineExpose({ context, containers, counters });
+</script>
+<template>
+  <main class="benchmark">
+    <h1>Browser measurement · {{ total }} items · {{ groups }} columns</h1>
+    <div class="bench-scroll">
+      <SortZone v-for="(items, id) in containers" :key="id" :id="String(id)" :items="items" />
+    </div>
+  </main>
+</template>
+<style>
+.benchmark {
+  padding: 20px;
+}
+.bench-scroll {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  overflow: auto;
+  height: calc(100vh - 100px);
+}
+.bench-scroll .demo-zone {
+  flex: 0 0 300px;
+  max-height: 100%;
+  overflow: auto;
+}
+</style>

@@ -1,0 +1,147 @@
+<script setup lang="ts">
+import { computed, ref, shallowRef, useTemplateRef, watch } from '@usevibejs/ui';
+import { useDnd, useSortableGroup, moveBetweenContainers, type SortableMove } from '@usevibejs/dnd';
+import { useQuery, useMutation, useQueryClient } from '@usevibejs/query';
+import { useUser } from '@usevibejs/auth';
+import { useMotion } from '@usevibejs/motion';
+import SortZone from '../playground/SortZone.vibe';
+interface Board {
+  revision: number;
+  containers: Record<string, readonly string[]>;
+}
+const user = useUser();
+const client = useQueryClient();
+const context = useDnd();
+const containers = shallowRef<Readonly<Record<string, readonly string[]>>>({
+  Todo: [],
+  Review: [],
+  Done: [],
+});
+const version = ref(0);
+const pending = ref(false);
+const status = ref('Loading the local demo server');
+const failNext = ref(false);
+const board = useQuery({
+  queryKey: ['ecosystem-board'],
+  queryFn: async () => {
+    const response = await fetch('/api/board');
+    if (!response.ok) throw Error('Load failed');
+    return (await response.json()) as Board;
+  },
+});
+watch(
+  () => board.data,
+  (data) => {
+    if (data && !pending.value) {
+      version.value = data.revision;
+      containers.value = data.containers;
+      status.value = 'Synced with the local demo server';
+    }
+  },
+  { immediate: true },
+);
+const mutation = useMutation({
+  mutationFn: async (input: {
+    move: SortableMove<string, string>;
+    revision: number;
+    fail: boolean;
+  }) => {
+    const response = await fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) throw Error(`${response.status}: server refused move`);
+    return (await response.json()) as Board;
+  },
+});
+let sequence = 0;
+async function persist(move: SortableMove<string, string>) {
+  if (!move.shouldCommit || pending.value) return;
+  const optimistic = moveBetweenContainers(containers.value, move, (id) => id);
+  if (!optimistic.move.shouldCommit) return;
+  const previous = containers.value;
+  const own = ++sequence;
+  containers.value = optimistic.containers;
+  pending.value = true;
+  status.value = 'Saving final move…';
+  await client.cancelQueries({ queryKey: ['ecosystem-board'] });
+  try {
+    const saved = await mutation.mutateAsync({
+      move,
+      revision: version.value,
+      fail: failNext.value,
+    });
+    if (own === sequence) {
+      version.value = saved.revision;
+      containers.value = saved.containers;
+      client.setQueryData(['ecosystem-board'], saved);
+      status.value = 'Move saved with revision ' + saved.revision;
+    }
+  } catch (error) {
+    if (own === sequence && containers.value === optimistic.containers) containers.value = previous;
+    status.value = String(error);
+  } finally {
+    if (own === sequence) pending.value = false;
+    failNext.value = false;
+    await client.invalidateQueries({ queryKey: ['ecosystem-board'] });
+  }
+}
+useSortableGroup({
+  containers,
+  getId: (id) => id,
+  context,
+  controlled: true,
+  canMove: (move) => !!user.value && !pending.value && move.toContainer !== 'Done',
+  onMove: (move) => {
+    void persist(move);
+  },
+});
+const content = useTemplateRef<HTMLElement>('content');
+useMotion(content, {
+  animate: computed(() => ({ opacity: context.isDragging.value ? 0.7 : 1 })),
+  transition: { duration: 0.12 },
+});
+async function crafted() {
+  const response = await fetch('/api/move', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      revision: version.value,
+      move: {
+        itemId: 'Task 1',
+        fromContainer: 'Todo',
+        toContainer: 'Done',
+        fromIndex: 0,
+        toIndex: 0,
+        shouldCommit: true,
+      },
+    }),
+  });
+  status.value = `Crafted request: ${response.status}`;
+}
+</script>
+<template>
+  <main class="playground-page">
+    <div class="eyebrow">OPTIONAL ECOSYSTEM</div>
+    <h1>One final move. One revision.</h1>
+    <p class="page-lead">
+      VibeQuery persistence, VibeAuth eligibility and VibeMotion opacity on a separate content
+      wrapper. This local test server supplies a deterministic fixture session; it is not a
+      production auth service.
+    </p>
+    <p>Signed in: {{ user ? user.name : 'Loading session' }} · Revision {{ version }}</p>
+    <label><input type="checkbox" v-model="failNext" /> Fail next save</label
+    ><button class="example-tabs" @click="crafted">Try a crafted unauthorized move</button>
+    <div ref="content" class="demo-transfer">
+      <SortZone
+        v-for="(items, id) in containers"
+        :key="id"
+        :id="String(id)"
+        :items="items"
+        :reject="id === 'Done' || pending || !user"
+      />
+    </div>
+    <p role="status">{{ status }}</p>
+  </main>
+</template>

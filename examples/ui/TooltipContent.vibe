@@ -1,0 +1,60 @@
+<!-- Adapted from shadcn/ui under MIT. See vibecn.LICENSE. -->
+<script setup lang="ts">
+import { useTemplateRef } from '@usevibejs/ui';
+import type { ClassValue } from '@usevibejs/ui';
+import { anchorOf, injectOverlay, useFloating, usePopover } from '../lib/overlay.ts';
+import type { DelayedOpen } from '../lib/overlay.ts';
+import { cn } from '../lib/utils.ts';
+
+defineOptions({ inheritAttrs: false });
+
+const {
+  class: className,
+  side = 'top',
+  align = 'center',
+  sideOffset = 6,
+  alignOffset = 0,
+} = defineProps<{
+  class?: ClassValue;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  align?: 'start' | 'center' | 'end';
+  sideOffset?: number;
+  alignOffset?: number;
+}>();
+defineSlots<{ default?: (props: {}) => unknown }>();
+const overlay = injectOverlay<DelayedOpen>('Tooltip');
+const content = useTemplateRef<HTMLElement>('content');
+const onToggle = usePopover(content, overlay.open);
+const placed = useFloating(
+  () => anchorOf(overlay.id),
+  content,
+  () => overlay.open.value,
+  () => ({ side, align, sideOffset, alignOffset }),
+);
+</script>
+
+<template>
+  <div
+    ref="content"
+    data-slot="tooltip-content"
+    :id="overlay.id + '-content'"
+    :data-state="overlay.open.value ? 'open' : 'closed'"
+    :data-side="placed"
+    :data-align="align"
+    role="tooltip"
+    v-bind="{ popover: 'manual', ...$attrs }"
+    :class="
+      cn(
+        'group/tooltip w-fit overflow-visible rounded-md bg-foreground px-3 py-1.5 text-xs text-balance text-background fixed inset-auto m-0 transition-[opacity,scale,translate,overlay,display] transition-discrete duration-150 opacity-0 scale-95 open:opacity-100 open:scale-100 starting:open:opacity-0 starting:open:scale-95 data-[side=bottom]:starting:open:-translate-y-2 data-[side=top]:starting:open:translate-y-2 data-[side=left]:starting:open:translate-x-2 data-[side=right]:starting:open:-translate-x-2 motion-reduce:transition-none',
+        className,
+      )
+    "
+    @beforetoggle="onToggle"
+  >
+    <slot /><span
+      aria-hidden="true"
+      data-slot="tooltip-arrow"
+      class="absolute size-2.5 rotate-45 rounded-[2px] bg-foreground group-data-[side=top]/tooltip:-bottom-1 group-data-[side=top]/tooltip:left-[calc(50%-5px)] group-data-[side=bottom]/tooltip:-top-1 group-data-[side=bottom]/tooltip:left-[calc(50%-5px)] group-data-[side=left]/tooltip:-right-1 group-data-[side=left]/tooltip:top-[calc(50%-5px)] group-data-[side=right]/tooltip:-left-1 group-data-[side=right]/tooltip:top-[calc(50%-5px)]"
+    />
+  </div>
+</template>

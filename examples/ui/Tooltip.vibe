@@ -1,0 +1,21 @@
+<!-- Adapted from shadcn/ui under MIT. See vibecn.LICENSE. -->
+<script setup lang="ts">
+import { provideOverlay, useDelayedOpen } from '../lib/overlay.ts';
+
+const { delayDuration = 0, closeDelay = 0 } = defineProps<{
+  /** Milliseconds before the tooltip opens on hover. Focus opens it at once. */
+  delayDuration?: number;
+  closeDelay?: number;
+}>();
+const open = defineModel<boolean>('open', { default: () => false });
+defineSlots<{ default?: (props: {}) => unknown }>();
+provideOverlay(
+  'Tooltip',
+  open,
+  useDelayedOpen(open, () => ({ open: delayDuration, close: closeDelay })),
+);
+</script>
+
+<template>
+  <slot />
+</template>

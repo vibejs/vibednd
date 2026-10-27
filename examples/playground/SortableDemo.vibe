@@ -1,0 +1,47 @@
+<script setup lang="ts">
+import { ref } from '@usevibejs/ui';
+import { useDnd, useSortableList } from '@usevibejs/dnd';
+import SortItem from './SortItem.vibe';
+const props = defineProps<{ kind: string }>();
+const context = useDnd();
+const status = ref('Pick up a handle with Space or drag it.');
+const { items } = useSortableList({
+  items: Array.from(
+    { length: props.kind === 'Auto-scrolling' ? 60 : props.kind === 'Dashboard' ? 6 : 5 },
+    (_, index) =>
+      props.kind === 'Dashboard'
+        ? ['Revenue', 'Active users', 'Conversion', 'Retention', 'Sessions', 'Activity'][index]!
+        : `Item ${index + 1}`,
+  ),
+  getId: (id) => id,
+  context,
+  onMove: (move) =>
+    (status.value = move.shouldCommit
+      ? `Moved ${move.itemId} to position ${move.toIndex + 1}`
+      : 'Order unchanged'),
+});
+</script>
+<template>
+  <div :class="'sortable-demo ' + (kind === 'Auto-scrolling' ? 'scroll-demo' : '')">
+    <ul
+      :class="
+        kind === 'Horizontal list'
+          ? 'demo-horizontal'
+          : kind === 'Grid' || kind === 'Dashboard'
+            ? 'demo-grid'
+            : 'demo-vertical'
+      "
+    >
+      <SortItem
+        v-for="(id, index) in items"
+        :key="id"
+        :id="id"
+        :index="index"
+        group="list"
+        :disabled="kind === 'Handles & disabled' && index === 2"
+        :nested="kind === 'Nested controls'"
+      />
+    </ul>
+  </div>
+  <p class="demo-status" role="status">{{ status }}</p>
+</template>

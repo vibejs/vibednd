@@ -1,0 +1,284 @@
+<script setup lang="ts">
+import { computed, ref, shallowRef, watch } from '@usevibejs/ui';
+import { useDnd, useSortableGroup, useSortableList } from '@usevibejs/dnd';
+import { initialColumns, initialTasks, loadBoard, names, people, type Task } from './model.ts';
+import BoardColumn from './BoardColumn.vibe';
+import Button from '../ui/Button.vibe';
+import Input from '../ui/Input.vibe';
+import Textarea from '../ui/Textarea.vibe';
+import Dialog from '../ui/Dialog.vibe';
+import DialogContent from '../ui/DialogContent.vibe';
+import DialogTitle from '../ui/DialogTitle.vibe';
+import DialogDescription from '../ui/DialogDescription.vibe';
+import Avatar from '../ui/Avatar.vibe';
+import AvatarFallback from '../ui/AvatarFallback.vibe';
+import DropdownMenu from '../ui/DropdownMenu.vibe';
+import DropdownMenuTrigger from '../ui/DropdownMenuTrigger.vibe';
+import DropdownMenuContent from '../ui/DropdownMenuContent.vibe';
+import DropdownMenuItem from '../ui/DropdownMenuItem.vibe';
+const initial = loadBoard();
+const context = useDnd({
+  feedback: {
+    label: (source) => ('title' in source.data ? String(source.data.title) : 'Moving column'),
+  },
+});
+const tasks = shallowRef(initial.tasks);
+const columns = shallowRef(initial.columns);
+const notice = ref('Changes are saved on this device');
+useSortableGroup({
+  containers: tasks,
+  getId: (task) => task.id,
+  context,
+  onMove: (move) => {
+    notice.value = move.shouldCommit
+      ? `Moved ${move.itemId} to ${names[move.toContainer!]}`
+      : move.canceled
+        ? 'Move canceled'
+        : 'Order unchanged';
+  },
+});
+useSortableList({
+  model: computed({
+    get: () => columns.value.map((id) => ({ id: `column:${id}`, column: id })),
+    set: (value: readonly { id: string; column: string }[]) => {
+      columns.value = value.map((entry) => entry.column);
+    },
+  }),
+  getId: (entry) => entry.id,
+  group: 'columns',
+  context,
+});
+watch(
+  () => JSON.stringify({ columns: columns.value, tasks: tasks.value }),
+  (value) => {
+    try {
+      localStorage.setItem('vibednd:orbit:v1', value);
+    } catch {
+      notice.value = 'Storage unavailable — changes remain in this tab';
+    }
+  },
+);
+const query = ref('');
+const priority = ref('all');
+const assignee = ref('all');
+const total = computed(() => Object.values(tasks.value).flat().length);
+const done = computed(() => tasks.value.done?.length ?? 0);
+const modal = ref(false);
+const editing = ref<string | null>(null);
+const group = ref('todo');
+const title = ref('');
+const description = ref('');
+const formPriority = ref('Medium');
+const formAssignee = ref('MC');
+const due = ref('2026-11-01');
+const tag = ref('Feature');
+function add(id = 'todo') {
+  context.cancel();
+  editing.value = null;
+  group.value = id;
+  title.value = '';
+  description.value = '';
+  formPriority.value = 'Medium';
+  formAssignee.value = 'MC';
+  due.value = '2026-11-01';
+  tag.value = 'Feature';
+  modal.value = true;
+}
+function edit(task: Task, id: string) {
+  context.cancel();
+  editing.value = task.id;
+  group.value = id;
+  title.value = task.title;
+  description.value = task.description;
+  formPriority.value = task.priority;
+  formAssignee.value = task.assignee;
+  due.value = task.due;
+  tag.value = task.tag;
+  modal.value = true;
+}
+function save() {
+  if (!title.value.trim()) return;
+  const ids = Object.values(tasks.value)
+    .flat()
+    .map((task) => Number(task.id.replace('ORB-', '')))
+    .filter(Number.isFinite);
+  const id = editing.value ?? `ORB-${Math.max(110, ...ids) + 1}`;
+  const task: Task = {
+    id,
+    title: title.value.trim(),
+    description: description.value,
+    priority: formPriority.value as Task['priority'],
+    assignee: formAssignee.value,
+    due: due.value,
+    tag: tag.value,
+  };
+  const next = Object.fromEntries(
+    Object.entries(tasks.value).map(([key, items]) => [
+      key,
+      items.filter((item) => item.id !== id),
+    ]),
+  );
+  const destination = [...next[group.value]!];
+  const oldIndex = tasks.value[group.value]!.findIndex((item) => item.id === id);
+  destination.splice(oldIndex < 0 ? destination.length : oldIndex, 0, task);
+  tasks.value = { ...next, [group.value]: destination };
+  modal.value = false;
+  notice.value = `Saved ${id}`;
+}
+function remove() {
+  if (!editing.value) return;
+  tasks.value = Object.fromEntries(
+    Object.entries(tasks.value).map(([id, items]) => [
+      id,
+      items.filter((task) => task.id !== editing.value),
+    ]),
+  );
+  modal.value = false;
+  notice.value = 'Task deleted';
+}
+function reset() {
+  context.cancel();
+  columns.value = [...initialColumns];
+  tasks.value = initialTasks;
+  notice.value = 'Sample board restored';
+}
+function clear() {
+  query.value = '';
+  priority.value = 'all';
+  assignee.value = 'all';
+}
+</script>
+<template>
+  <div class="kanban">
+    <div class="project-heading">
+      <div>
+        <div class="eyebrow">WORKSPACE / PRODUCT</div>
+        <h1>A little more <span>momentum.</span></h1>
+        <p>Your next great release starts with a clear next step.</p>
+      </div>
+      <Button class="primary-action" @click="add()"
+        ><span aria-hidden="true">＋</span> New task</Button
+      >
+    </div>
+    <div class="project-meta">
+      <div class="team-avatars">
+        <Avatar v-for="(person, id) in people" :key="id" size="sm" :title="person"
+          ><AvatarFallback :class="'person-' + id">{{ id }}</AvatarFallback></Avatar
+        >
+      </div>
+      <span>Orbit team</span><span class="meta-divider"></span><span>{{ total }} tasks</span>
+      <div class="release-progress">
+        <div class="progress-track">
+          <span :style="{ width: (total ? (done / total) * 100 : 0) + '%' }"></span>
+        </div>
+        <span>{{ done }} completed</span>
+      </div>
+    </div>
+    <div class="board-toolbar">
+      <div class="board-tab"><span aria-hidden="true">▥</span> Board</div>
+      <label class="search-field"
+        ><span aria-hidden="true">⌕</span
+        ><Input
+          v-model="query"
+          type="search"
+          aria-label="Search tasks"
+          placeholder="Search tasks…" /></label
+      ><label class="filter-label"
+        ><span class="sr-only">Priority</span
+        ><select v-model="priority" aria-label="Filter priority">
+          <option value="all">All priorities</option>
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select></label
+      ><label class="filter-label"
+        ><span class="sr-only">Assignee</span
+        ><select v-model="assignee" aria-label="Filter assignee">
+          <option value="all">Everyone</option>
+          <option v-for="(person, id) in people" :key="id" :value="id">{{ person }}</option>
+        </select></label
+      ><Button
+        v-if="query || priority !== 'all' || assignee !== 'all'"
+        variant="ghost"
+        size="sm"
+        @click="clear"
+        >Clear filters</Button
+      ><DropdownMenu
+        ><DropdownMenuTrigger variant="ghost" size="icon" aria-label="Board options"
+          >⋯</DropdownMenuTrigger
+        ><DropdownMenuContent
+          ><DropdownMenuItem @select="reset"
+            >Restore sample board</DropdownMenuItem
+          ></DropdownMenuContent
+        ></DropdownMenu
+      >
+    </div>
+    <p v-if="query || priority !== 'all' || assignee !== 'all'" class="filter-note">
+      Clear filters to reorder cards. You can still open and edit matching tasks.
+    </p>
+    <div class="board-scroll" aria-label="Project board">
+      <div class="board-columns">
+        <BoardColumn
+          v-for="(id, index) in columns"
+          :key="id"
+          :id="id"
+          :index="index"
+          :tasks="tasks[id] || []"
+          :query="query"
+          :priority="priority"
+          :assignee="assignee"
+          @add="add"
+          @edit="edit"
+        />
+      </div>
+    </div>
+    <footer class="board-status">
+      <span class="saved-dot"></span><span role="status">{{ notice }}</span
+      ><span class="keyboard-hint"
+        ><kbd>Space</kbd> pick up <span>·</span> <kbd>↑ ↓ ← →</kbd> move <span>·</span>
+        <kbd>Esc</kbd> cancel</span
+      >
+    </footer>
+    <Dialog v-model:open="modal"
+      ><DialogContent class="task-dialog"
+        ><DialogTitle>{{ editing ? 'Edit task' : 'A new next step' }}</DialogTitle
+        ><DialogDescription
+          >Give your team the context they need to move forward.</DialogDescription
+        >
+        <form @submit.prevent="save" class="task-form">
+          <label
+            >Task title<Input v-model="title" required placeholder="What needs to happen?" /></label
+          ><label
+            >Description<Textarea v-model="description" placeholder="Add a little context…"
+          /></label>
+          <div class="form-row">
+            <label
+              >Status<select v-model="group" aria-label="Status">
+                <option v-for="id in columns" :key="id" :value="id">{{ names[id] }}</option>
+              </select></label
+            ><label
+              >Priority<select v-model="formPriority" aria-label="Priority">
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select></label
+            >
+          </div>
+          <div class="form-row">
+            <label
+              >Assignee<select v-model="formAssignee" aria-label="Assignee">
+                <option v-for="(person, id) in people" :key="id" :value="id">{{ person }}</option>
+              </select></label
+            ><label>Due date<input type="date" v-model="due" /></label>
+          </div>
+          <label>Tag<Input v-model="tag" /></label>
+          <div class="form-actions">
+            <Button v-if="editing" variant="destructive" @click="remove">Delete task</Button
+            ><Button variant="ghost" @click="modal = false">Cancel</Button
+            ><Button type="submit">Save task</Button>
+          </div>
+        </form></DialogContent
+      ></Dialog
+    >
+  </div>
+</template>

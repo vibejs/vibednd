@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-27T22:14:54.257Z",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M4",
+  "browser": "156.0.8078.4",
+  "method": "Real Chromium mouse input; deferred commits; 24 mouse moves per drag, official activation delay, five cancellations, six transfers for twenty columns. Times include input pacing; registration includes page load. Long frames are PerformanceObserver long-animation-frame entries. No FPS inferred.",
+  "results": [
+    {
+      "items": 100,
+      "columns": 1,
+      "registrationMs": 541.2116249999999,
+      "firstDragMs": 856.1120410000003,
+      "fiveCancellationsMs": 3643.173499999999,
+      "measurements": 2978,
+      "longFrames": [
+        156,
+        104
+      ],
+      "counters": {
+        "moves": 144,
+        "activeUpdates": 12,
+        "targetUpdates": 26
+      },
+      "total": 100
+    },
+    {
+      "items": 500,
+      "columns": 1,
+      "registrationMs": 1291.4410000000007,
+      "firstDragMs": 849.1133750000008,
+      "fiveCancellationsMs": 3981.3952500000014,
+      "measurements": 10171,
+      "longFrames": [
+        571.7000000476837,
+        130
+      ],
+      "counters": {
+        "moves": 144,
+        "activeUpdates": 12,
+        "targetUpdates": 26
+      },
+      "total": 500
+    },
+    {
+      "items": 1000,
+      "columns": 1,
+      "registrationMs": 2203.5144169999985,
+      "firstDragMs": 1018.4308340000025,
+      "fiveCancellationsMs": 4252.342124999999,
+      "measurements": 19147,
+      "longFrames": [
+        1917.8999999761581,
+        195.59999990463257,
+        63.700000047683716,
+        70.30000007152557,
+        84.70000004768372,
+        76.60000002384186,
+        88.59999990463257
+      ],
+      "counters": {
+        "moves": 144,
+        "activeUpdates": 12,
+        "targetUpdates": 27
+      },
+      "total": 1000
+    },
+    {
+      "items": 1000,
+      "columns": 20,
+      "registrationMs": 2144.613290999998,
+      "firstDragMs": 927.5109589999993,
+      "fiveCancellationsMs": 4407.651833,
+      "transfersMs": 5190.875625000001,
+      "measurements": 48573,
+      "longFrames": [
+        1933.1000000238419,
+        172.09999990463257,
+        59.700000047683716,
+        58,
+        66,
+        75,
+        78.60000002384186,
+        78.70000004768372,
+        53.200000047683716,
+        91.10000002384186,
+        59.300000071525574,
+        53.800000071525574
+      ],
+      "counters": {
+        "moves": 288,
+        "activeUpdates": 24,
+        "targetUpdates": 47
+      },
+      "total": 1000
+    }
+  ]
+}

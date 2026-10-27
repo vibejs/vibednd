@@ -1,0 +1,87 @@
+<script setup lang="ts">
+import { useTemplateRef } from '@usevibejs/ui';
+import { useSortable } from '@usevibejs/dnd';
+import type { Task } from './model.ts';
+import { people } from './model.ts';
+import Card from '../ui/Card.vibe';
+import Badge from '../ui/Badge.vibe';
+import Avatar from '../ui/Avatar.vibe';
+import AvatarFallback from '../ui/AvatarFallback.vibe';
+import DragHandle from '../ui/DragHandle.vibe';
+const props = defineProps<{ task: Task; index: number; group: string; filtered: boolean }>();
+const emit = defineEmits<{ edit: [task: Task, group: string] }>();
+const element = useTemplateRef<HTMLElement>('element');
+const handle = useTemplateRef<{ element: HTMLButtonElement | null }>('handle');
+const drag = useSortable({
+  id: () => props.task.id,
+  index: () => props.index,
+  group: () => props.group,
+  element,
+  handle: () => handle.value?.element,
+  data: () => props.task,
+  type: 'task',
+  accept: 'task',
+  disabled: () => ({ draggable: props.filtered }),
+  transition: { duration: 160, idle: true },
+});
+</script>
+<template>
+  <li
+    ref="element"
+    class="task-shell"
+    :data-task="task.id"
+    :data-over="drag.isOver.value"
+    :data-dragging="drag.isDragging.value"
+  >
+    <Card class="task-card"
+      ><div class="task-top">
+        <span class="task-id">{{ task.id }}</span
+        ><DragHandle
+          ref="handle"
+          class="task-grip"
+          :label="'Move ' + task.title"
+          :disabled="filtered"
+        />
+      </div>
+      <button type="button" class="task-title" @click="emit('edit', task, group)">
+        {{ task.title }}
+      </button>
+      <p class="task-description">{{ task.description }}</p>
+      <div class="task-tags">
+        <Badge variant="secondary" class="tag-badge">{{ task.tag }}</Badge
+        ><span :class="'priority priority-' + task.priority.toLowerCase()"
+          ><span aria-hidden="true">{{
+            task.priority === 'High' ? '▰' : task.priority === 'Medium' ? '▱' : '−'
+          }}</span
+          >{{ task.priority }}</span
+        >
+      </div>
+      <footer class="task-footer">
+        <span class="due-date"
+          ><svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <rect x="2" y="3" width="12" height="11" rx="2" />
+            <path d="M5 1v4m6-4v4M2 7h12" /></svg
+          >{{
+            task.due
+              ? new Date(task.due + 'T12:00:00').toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : 'No date'
+          }}</span
+        ><Avatar size="sm" :title="people[task.assignee] || task.assignee"
+          ><AvatarFallback :class="'person-' + task.assignee">{{
+            task.assignee
+          }}</AvatarFallback></Avatar
+        >
+      </footer></Card
+    >
+  </li>
+</template>

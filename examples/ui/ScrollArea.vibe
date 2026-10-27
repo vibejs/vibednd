@@ -1,0 +1,29 @@
+<!-- Adapted from shadcn/ui under MIT. See vibecn.LICENSE. -->
+<script setup lang="ts">
+import { provide, ref } from '@usevibejs/ui';
+import type { ClassValue } from '@usevibejs/ui';
+import { cn } from '../lib/utils.ts';
+
+defineOptions({ inheritAttrs: false });
+
+const { class: className } = defineProps<{ class?: ClassValue }>();
+defineSlots<{ default?: (props: {}) => unknown }>();
+// A ScrollBar inside enables scrolling along its orientation; vertical scrolling is always on.
+const horizontal = ref(false);
+provide(Symbol.for('vibecn.scroll-area'), horizontal);
+</script>
+
+<template>
+  <div data-slot="scroll-area" v-bind="$attrs" :class="cn('relative', className)">
+    <div
+      data-slot="scroll-area-viewport"
+      tabindex="0"
+      :class="[
+        'size-full overflow-y-auto overscroll-contain rounded-[inherit] transition-[color,box-shadow] outline-none [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1',
+        horizontal ? 'overflow-x-auto' : 'overflow-x-hidden',
+      ]"
+    >
+      <slot />
+    </div>
+  </div>
+</template>

@@ -1,0 +1,32 @@
+<script setup lang="ts">
+import { useTemplateRef } from '@usevibejs/ui';
+import { useDroppable } from '@usevibejs/dnd';
+import SortItem from './SortItem.vibe';
+const props = defineProps<{ id: string; items: readonly string[]; reject?: boolean }>();
+const element = useTemplateRef<HTMLElement>('element');
+const drop = useDroppable({
+  id: () => `zone:${props.id}`,
+  element,
+  group: () => props.id,
+  index: () => props.items.length,
+  accept: (source) => source.type === 'demo:item' && !props.reject,
+  collisionPriority: 0,
+});
+</script>
+<template>
+  <section
+    ref="element"
+    class="demo-zone"
+    :data-zone="id"
+    :data-over="drop.isOver.value"
+    :data-eligible="drop.isEligible.value"
+  >
+    <h3>{{ id }}</h3>
+    <ul>
+      <SortItem v-for="(id, index) in items" :key="id" :id="id" :index="index" :group="$props.id" />
+    </ul>
+    <p v-if="!items.length">
+      {{ reject ? 'Transfers not allowed' : 'Drop here · empty container' }}
+    </p>
+  </section>
+</template>

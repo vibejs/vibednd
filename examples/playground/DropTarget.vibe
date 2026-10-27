@@ -1,0 +1,42 @@
+<script setup lang="ts">
+import { useTemplateRef } from '@usevibejs/ui';
+import {
+  useDroppable,
+  closestCenter,
+  pointerIntersection,
+  shapeIntersection,
+} from '@usevibejs/dnd';
+const props = defineProps<{ id: string; accepted?: boolean; strategy?: string }>();
+const element = useTemplateRef<HTMLElement>('element');
+const drop = useDroppable({
+  id: () => props.id,
+  element,
+  data: () => ({ label: props.id }),
+  accept: (source) => source.type === 'parcel' && props.accepted !== false,
+  collisionDetector: () =>
+    props.strategy === 'center'
+      ? closestCenter
+      : props.strategy === 'shape'
+        ? shapeIntersection
+        : pointerIntersection,
+});
+</script>
+<template>
+  <div
+    ref="element"
+    class="parcel-zone"
+    :data-zone="id"
+    :data-over="drop.isOver.value"
+    :data-eligible="drop.isEligible.value"
+  >
+    <span aria-hidden="true">{{ accepted === false ? '⊘' : '↳' }}</span
+    ><strong>{{ id }}</strong
+    ><small>{{
+      accepted === false
+        ? 'Rejects this type'
+        : drop.isOver.value
+          ? 'Release to deliver'
+          : 'Drop a parcel here'
+    }}</small>
+  </div>
+</template>

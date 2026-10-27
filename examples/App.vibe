@@ -1,0 +1,90 @@
+<script setup lang="ts">
+import { ref, watch } from '@usevibejs/ui';
+import Kanban from './board/Kanban.vibe';
+import Playground from './playground/Playground.vibe';
+import Documentation from './docs/Documentation.vibe';
+import Button from './ui/Button.vibe';
+const page = ref(
+  location.hash.startsWith('#docs')
+    ? 'docs'
+    : location.hash === '#playground'
+      ? 'playground'
+      : 'board',
+);
+const dark = ref(localStorage.getItem('vibednd:theme') === 'dark');
+watch(
+  dark,
+  (value) => {
+    document.documentElement.classList.toggle('dark', value);
+    localStorage.setItem('vibednd:theme', value ? 'dark' : 'light');
+  },
+  { immediate: true },
+);
+function navigate(value: string) {
+  page.value = value;
+  location.hash = value;
+}
+</script>
+<template>
+  <div class="app-shell">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <aside class="app-sidebar">
+      <a href="#board" class="brand" @click.prevent="navigate('board')"
+        ><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>VibeDND<span
+          class="version"
+          >0.1</span
+        ></a
+      >
+      <div class="workspace-label">
+        <span class="workspace-icon">O</span
+        ><span>Orbit workspace<small>Product & engineering</small></span>
+      </div>
+      <nav aria-label="Main navigation">
+        <button :class="{ active: page === 'board' }" @click="navigate('board')">
+          <span aria-hidden="true">▥</span> Project board</button
+        ><button :class="{ active: page === 'playground' }" @click="navigate('playground')">
+          <span aria-hidden="true">⌘</span> Playground</button
+        ><button :class="{ active: page === 'docs' }" @click="navigate('docs')">
+          <span aria-hidden="true">≡</span> Documentation
+        </button>
+      </nav>
+      <div class="sidebar-note">
+        <span class="tiny-dot"></span>Made for Vibe.js
+        <p>Powerful drag & drop.<br />Your interface, your rules.</p>
+        <button @click="navigate('docs')">Start building <span aria-hidden="true">↗</span></button>
+      </div>
+      <div class="sidebar-bottom">
+        <span class="avatar-self">MC</span><span>Maya Chen<small>Personal workspace</small></span>
+      </div>
+    </aside>
+    <div class="app-body">
+      <header class="app-topbar">
+        <span class="topbar-breadcrumb"
+          >Orbit <span>/</span>
+          {{
+            page === 'board' ? 'Product roadmap' : page === 'docs' ? 'Documentation' : 'Playground'
+          }}</span
+        >
+        <div>
+          <span class="local-label"><span></span> Local demo</span
+          ><Button
+            variant="ghost"
+            size="icon-sm"
+            :aria-label="dark ? 'Switch to light theme' : 'Switch to dark theme'"
+            @click="dark = !dark"
+            >{{ dark ? '☀' : '☾' }}</Button
+          ><a href="https://github.com/vibejs/vibednd" class="source-link">Source ↗</a>
+        </div>
+      </header>
+      <main id="main">
+        <Kanban v-if="page === 'board'" /><Playground
+          v-else-if="page === 'playground'"
+        /><Documentation v-else />
+      </main>
+      <footer class="site-footer">
+        <span>VibeDND <span class="subtle">/ Powerful Drag & Drop for Vibe.js</span></span
+        ><span>Headless. Accessible. Yours.</span>
+      </footer>
+    </div>
+  </div>
+</template>
