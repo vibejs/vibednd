@@ -1,0 +1,12 @@
+{
+  "singleQuote": true,
+  "printWidth": 100,
+  "ignorePatterns": [
+    "dist/**",
+    "site-dist/**",
+    ".artifacts/**",
+    "coverage/**",
+    "test-results/**",
+    "playwright-report/**"
+  ]
+}

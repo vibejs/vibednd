@@ -1,0 +1,6 @@
+<script setup lang="ts">
+import { useDndContext } from '../../src/index.ts';
+const context = useDndContext();
+defineExpose({ context });
+</script>
+<template><p>Child context</p></template>

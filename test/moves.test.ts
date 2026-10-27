@@ -1,65 +1,66 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   getSortableMove,
   moveBetweenContainers,
   moveItem,
   type SortableMove,
-} from "../src/index.ts";
+} from '../src/index.ts';
 const move: SortableMove<string, string> = {
-  itemId: "A",
-  fromContainer: "one",
-  toContainer: "two",
+  itemId: 'A',
+  fromContainer: 'one',
+  toContainer: 'two',
   fromIndex: 0,
   toIndex: 0,
-  targetId: "zone:two",
+  targetId: 'zone:two',
+  targetIsContainer: true,
   accepted: true,
   canceled: false,
   shouldCommit: true,
-  reason: "accepted",
+  reason: 'accepted',
 };
-describe("immutable moves", () => {
-  it("reorders without mutating readonly input", () => {
-    const input = Object.freeze(["A", "B", "C"]);
-    expect(moveItem(input, 0, 2)).toEqual(["B", "C", "A"]);
-    expect(input).toEqual(["A", "B", "C"]);
+describe('immutable moves', () => {
+  it('reorders without mutating readonly input', () => {
+    const input = Object.freeze(['A', 'B', 'C']);
+    expect(moveItem(input, 0, 2)).toEqual(['B', 'C', 'A']);
+    expect(input).toEqual(['A', 'B', 'C']);
     expect(() => moveItem(input, -1, 0)).toThrow(RangeError);
   });
-  it("transfers into an empty group and leaves untouched arrays stable", () => {
-    const original = { one: ["A", "B"], two: [], three: ["C"] };
+  it('transfers into an empty group and leaves untouched arrays stable', () => {
+    const original = { one: ['A', 'B'], two: [], three: ['C'] };
     const result = moveBetweenContainers(original, move, (id) => id);
-    expect(result.containers).toEqual({ one: ["B"], two: ["A"], three: ["C"] });
+    expect(result.containers).toEqual({ one: ['B'], two: ['A'], three: ['C'] });
     expect(result.containers.three).toBe(original.three);
-    expect(original.one).toEqual(["A", "B"]);
+    expect(original.one).toEqual(['A', 'B']);
   });
-  it("reorders within a group using final indexes", () => {
+  it('reorders within a group using final indexes', () => {
     const result = moveBetweenContainers(
-      { one: ["A", "B", "C"] },
-      { ...move, toContainer: "one", targetId: "C", toIndex: 2 },
+      { one: ['A', 'B', 'C'] },
+      { ...move, toContainer: 'one', targetId: 'C', targetIsContainer: false, toIndex: 2 },
       (id) => id,
     );
-    expect(result.containers.one).toEqual(["B", "C", "A"]);
+    expect(result.containers.one).toEqual(['B', 'C', 'A']);
   });
-  it.each(["canceled", "rejected"] as const)("does not write %s operations", (reason) => {
-    const input = { one: ["A"], two: [] };
+  it.each(['canceled', 'rejected'] as const)('does not write %s operations', (reason) => {
+    const input = { one: ['A'], two: [] };
     expect(
       moveBetweenContainers(input, { ...move, shouldCommit: false, reason }, (id) => id).containers,
     ).toBe(input);
   });
-  it("rejects missing or stale source/target and duplicate IDs", () => {
-    expect(moveBetweenContainers({ one: ["B", "A"], two: [] }, move, (id) => id).move.reason).toBe(
-      "stale",
+  it('rejects missing or stale source/target and duplicate IDs', () => {
+    expect(moveBetweenContainers({ one: ['B', 'A'], two: [] }, move, (id) => id).move.reason).toBe(
+      'stale',
     );
     expect(moveBetweenContainers({ one: [], two: [] }, move, (id) => id).move.reason).toBe(
-      "missing-source",
+      'missing-source',
     );
-    expect(() => moveBetweenContainers({ one: ["A"], two: ["A"] }, move, (id) => id)).toThrow(
-      "Duplicate",
+    expect(() => moveBetweenContainers({ one: ['A'], two: ['A'] }, move, (id) => id)).toThrow(
+      'Duplicate',
     );
   });
-  it("accepts absent collisions and equal IDs deterministically", () => {
+  it('accepts absent collisions and equal IDs deterministically', () => {
     const event = {
       operation: {
-        source: { id: "A", data: {}, type: undefined, element: undefined, index: 0, group: "one" },
+        source: { id: 'A', data: {}, type: undefined, element: undefined, index: 0, group: 'one' },
         target: null,
       },
       canceled: false,
@@ -67,7 +68,68 @@ describe("immutable moves", () => {
       engine: null!,
       preventDefault() {},
     };
-    expect(getSortableMove(event)?.reason).toBe("missing-target");
+    expect(getSortableMove(event)?.reason).toBe('missing-target');
     expect(getSortableMove({ ...event, canceled: true })?.shouldCommit).toBe(false);
   });
+});
+
+it('refuses stale item targets instead of treating removed items as container zones', () => {
+  const operation: SortableMove<string, string> = {
+    ...move,
+    toIndex: 0,
+    targetId: 'removed',
+    targetIsContainer: false,
+  };
+  expect(moveBetweenContainers({ one: ['A'], two: ['B'] }, operation, (id) => id).move.reason).toBe(
+    'stale',
+  );
+});
+
+it.each([
+  [1, '1'],
+  ['1', 1],
+] as const)('rejects container aliases %s → %s without duplicating items', (from, to) => {
+  const input = { '1': ['A', 'B', 'C'] };
+  const result = moveBetweenContainers<string, string, string | number>(
+    input,
+    {
+      ...move,
+      fromContainer: from,
+      toContainer: to,
+      targetId: 'C',
+      targetIsContainer: false,
+      toIndex: 2,
+    },
+    (id) => id,
+  );
+  expect(result.containers).toBe(input);
+  expect(result.containers['1']).toEqual(['A', 'B', 'C']);
+  expect(result.move.shouldCommit).toBe(false);
+  expect(result.move.reason).toBe('stale');
+});
+it.each([
+  { canceled: true, accepted: true, reason: 'accepted' as const },
+  { canceled: false, accepted: false, reason: 'accepted' as const },
+  { canceled: false, accepted: true, reason: 'canceled' as const },
+])('refuses inconsistent commit flags: %j', (flags) => {
+  const input = { one: ['A'], two: [] as string[] };
+  const result = moveBetweenContainers(
+    input,
+    { ...move, ...flags, shouldCommit: true },
+    (id) => id,
+  );
+  expect(result.containers).toBe(input);
+  expect(result.move.shouldCommit).toBe(false);
+});
+it('keeps distinct numeric container IDs usable', () => {
+  const result = moveBetweenContainers<string, string, number>(
+    { 1: ['A'], 2: [] },
+    {
+      ...move,
+      fromContainer: 1,
+      toContainer: 2,
+    },
+    (id) => id,
+  );
+  expect(result.containers).toEqual({ 1: [], 2: ['A'] });
 });

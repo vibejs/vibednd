@@ -1,0 +1,13 @@
+<script setup lang="ts">
+import { useTemplateRef } from '@usevibejs/ui';
+import { useDnd, type DndContext } from '../../src/index.ts';
+import ContextChild from './ContextChild.vibe';
+import NestedContext from './NestedContext.vibe';
+const context = useDnd();
+const child = useTemplateRef<{ context: DndContext }>('child');
+const nested = useTemplateRef<{ context: DndContext }>('nested');
+defineExpose({ context, child, nested });
+</script>
+<template>
+  <div><ContextChild ref="child" /><NestedContext ref="nested" /></div>
+</template>

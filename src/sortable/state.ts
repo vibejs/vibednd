@@ -1,11 +1,11 @@
-import { computed, onScopeDispose, shallowRef, toValue, watch, type Ref } from "@usevibejs/ui";
-import { assertScope, useDndContext, useDndMonitor, type DndContext } from "../core/context.ts";
-import { getSortableMove, moveBetweenContainers } from "./move.ts";
-import type { Identifier, Reactive, SortableMove } from "../types.ts";
+import { computed, onScopeDispose, shallowRef, toValue, watch, type Ref } from '@usevibejs/ui';
+import { assertScope, useDndContext, useDndMonitor, type DndContext } from '../core/context.ts';
+import { getSortableMove, moveBetweenContainers } from './move.ts';
+import type { Identifier, Reactive, SortableMove } from '../types.ts';
 export interface SortableGroupOptions<T, I extends Identifier, G extends Identifier> {
   containers: Ref<Readonly<Record<G, readonly T[]>>>;
   getId(item: T): I;
-  context?: DndContext;
+  context?: DndContext<object, object>;
   onMove?(move: SortableMove<I, G>): void;
   canMove?(move: SortableMove<I, G>): boolean;
   /** Controlled mode emits operations without writing the ref. Default false. */
@@ -14,7 +14,7 @@ export interface SortableGroupOptions<T, I extends Identifier, G extends Identif
 export function useSortableGroup<T, I extends Identifier, G extends Identifier>(
   options: SortableGroupOptions<T, I, G>,
 ) {
-  assertScope("useSortableGroup");
+  assertScope('useSortableGroup');
   const context = useDndContext(options.context);
   let snapshot: Map<I, { container: G; index: number }> | undefined;
   const lastMove = shallowRef<SortableMove<I, G> | null>(null);
@@ -30,7 +30,7 @@ export function useSortableGroup<T, I extends Identifier, G extends Identifier>(
     () => {
       if (snapshot && context.isDragging.value) context.cancel();
     },
-    { flush: "sync" },
+    { flush: 'sync' },
   );
   useDndMonitor(
     {
@@ -55,7 +55,7 @@ export function useSortableGroup<T, I extends Identifier, G extends Identifier>(
           fromIndex: start.index,
         } as SortableMove<I, G>;
         if (options.canMove && !options.canMove(move))
-          move = { ...move, accepted: false, shouldCommit: false, reason: "rejected" };
+          move = { ...move, accepted: false, shouldCommit: false, reason: 'rejected' };
         const result = moveBetweenContainers(options.containers.value, move, options.getId);
         lastMove.value = result.move;
         if (result.move.shouldCommit && !options.controlled)
@@ -73,14 +73,14 @@ export interface SortableListOptions<T, I extends Identifier> {
   model?: Ref<readonly T[]>;
   getId(item: T): I;
   group?: Identifier;
-  context?: DndContext;
+  context?: DndContext<object, object>;
   controlled?: boolean;
   onMove?(move: SortableMove<I>): void;
 }
 export function useSortableList<T, I extends Identifier>(options: SortableListOptions<T, I>) {
-  assertScope("useSortableList");
+  assertScope('useSortableList');
   const items = options.model ?? shallowRef<readonly T[]>([...(options.items ?? [])]);
-  const group = options.group ?? "list";
+  const group = options.group ?? 'list';
   const containers = computed({
     get: () => ({ [group]: items.value }),
     set: (value: Readonly<Record<Identifier, readonly T[]>>) => {

@@ -2,15 +2,82 @@
 import { ref, shallowRef } from '@usevibejs/ui';
 import { useDnd, useSortableGroup } from '../../src/index.ts';
 import AdapterZone from './AdapterZone.vibe';
-const context=useDnd();
-const containers=shallowRef<Readonly<Record<string,readonly string[]>>>({one:['A','B','C','D'],two:[],three:['E','locked']});
-const moves=ref<string[]>([]);
-useSortableGroup({containers,getId:id=>id,context,onMove:move=>moves.value=[...moves.value,move.reason]});
-const unrelated=ref(0);const shown=ref(true);
-function remove(){containers.value={...containers.value,one:containers.value.one!.filter(id=>id!=='A')};}
-function insert(){containers.value={...containers.value,one:['X',...containers.value.one!]};}
-function replace(){containers.value={...containers.value,one:['D','C','B','A']};}
-defineExpose({context,containers,shown,unrelated});
+const context = useDnd();
+const containers = shallowRef<Readonly<Record<string, readonly string[]>>>({
+  one: ['A', 'B', 'C', 'D'],
+  two: [],
+  three: ['E', 'locked'],
+});
+const moves = ref<string[]>([]);
+useSortableGroup({
+  containers,
+  getId: (id) => id,
+  context,
+  onMove: (move) => (moves.value = [...moves.value, move.reason]),
+});
+const unrelated = ref(0);
+const shown = ref(true);
+function remove() {
+  containers.value = { ...containers.value, one: containers.value.one!.filter((id) => id !== 'A') };
+}
+function insert() {
+  containers.value = { ...containers.value, one: ['X', ...containers.value.one!] };
+}
+function replace() {
+  containers.value = { ...containers.value, one: ['D', 'C', 'B', 'A'] };
+}
+defineExpose({ context, containers, shown, unrelated });
 </script>
-<template><main data-adapter><h1>Adapter regression board</h1><output data-state>{{ JSON.stringify(containers) }}</output><output data-moves>{{ moves.join(',') }}</output><button @click="unrelated++">Unrelated {{ unrelated }}</button><button @click="remove">Remove A</button><button @click="insert">Insert</button><button @click="replace">Replace</button><button @click="shown=!shown">Toggle</button><button @click="context.cancel">Cancel</button><div v-if="shown" class="test-zones"><AdapterZone v-for="(items,id) in containers" :key="id" :id="String(id)" :items="[...items]" /></div></main></template>
-<style>.test-zones{display:flex;gap:24px}.test-zones section{width:280px;padding:16px;background:#eff2fa;min-height:350px}.test-zones ul{list-style:none;padding:0}.test-zones li{padding:12px;margin:8px 0;background:white;border:1px solid #ccc}.test-zones input{width:80px}.test-zones li[data-over=true]{outline:3px solid #4263eb}.test-zones section[data-over=true]{outline:3px solid #4263eb}.test-zones button:focus-visible{outline:3px solid #4263eb}</style>
+<template>
+  <main data-adapter>
+    <h1>Adapter regression board</h1>
+    <output data-state>{{ JSON.stringify(containers) }}</output
+    ><output data-moves>{{ moves.join(',') }}</output
+    ><button @click="unrelated++">Unrelated {{ unrelated }}</button
+    ><button @click="remove">Remove A</button><button @click="insert">Insert</button
+    ><button @click="replace">Replace</button><button @click="shown = !shown">Toggle</button
+    ><button @click="context.cancel">Cancel</button>
+    <div v-if="shown" class="test-zones">
+      <AdapterZone
+        v-for="(items, id) in containers"
+        :key="id"
+        :id="String(id)"
+        :items="[...items]"
+      />
+    </div>
+  </main>
+</template>
+<style>
+.test-zones {
+  display: flex;
+  gap: 24px;
+}
+.test-zones section {
+  width: 280px;
+  padding: 16px;
+  background: #eff2fa;
+  min-height: 350px;
+}
+.test-zones ul {
+  list-style: none;
+  padding: 0;
+}
+.test-zones li {
+  padding: 12px;
+  margin: 8px 0;
+  background: white;
+  border: 1px solid #ccc;
+}
+.test-zones input {
+  width: 80px;
+}
+.test-zones li[data-over='true'] {
+  outline: 3px solid #4263eb;
+}
+.test-zones section[data-over='true'] {
+  outline: 3px solid #4263eb;
+}
+.test-zones button:focus-visible {
+  outline: 3px solid #4263eb;
+}
+</style>

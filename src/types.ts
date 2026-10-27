@@ -1,6 +1,6 @@
-import type { MaybeRefOrGetter, Ref } from "@usevibejs/ui";
-import type { DragDropManager, Draggable, Droppable, FeedbackOptions } from "@dnd-kit/dom";
-import type { Type, UniqueIdentifier } from "@dnd-kit/abstract";
+import type { MaybeRefOrGetter, Ref } from '@usevibejs/ui';
+import type { DragDropManager, Draggable, Droppable, FeedbackOptions } from '@dnd-kit/dom';
+import type { Type, UniqueIdentifier } from '@dnd-kit/abstract';
 export type Identifier = UniqueIdentifier;
 export type Metadata = Record<string, unknown>;
 export type Reactive<T> = MaybeRefOrGetter<T>;
@@ -34,13 +34,13 @@ export interface DndMonitor<T extends object = Metadata, U extends object = T> {
   onDragEnd?(event: DndEvent<T, U>): void;
 }
 export type MoveReason =
-  | "accepted"
-  | "unchanged"
-  | "canceled"
-  | "rejected"
-  | "missing-source"
-  | "missing-target"
-  | "stale";
+  | 'accepted'
+  | 'unchanged'
+  | 'canceled'
+  | 'rejected'
+  | 'missing-source'
+  | 'missing-target'
+  | 'stale';
 export interface SortableMove<
   I extends Identifier = Identifier,
   G extends Identifier = Identifier,
@@ -52,6 +52,7 @@ export interface SortableMove<
   /** Final index after removing the source. */
   readonly toIndex: number;
   readonly targetId: Identifier | null;
+  readonly targetIsContainer?: boolean;
   readonly canceled: boolean;
   readonly accepted: boolean;
   readonly shouldCommit: boolean;
@@ -67,7 +68,10 @@ export interface TransferResult<
 }
 export type EngineEntity<T extends object = Metadata> = Draggable<T> | Droppable<T>;
 /** Feedback is always rendered through a separate inert overlay. */
-export type DragFeedbackOptions = Pick<FeedbackOptions, "dropAnimation" | "keyboardTransition"> & {
-  label?: (source: DragEntity) => string;
+export type DragFeedbackOptions<T extends object = Metadata> = Pick<
+  FeedbackOptions,
+  'dropAnimation' | 'keyboardTransition'
+> & {
+  label?: (source: DragEntity<T>) => string;
   className?: string;
 };

@@ -2,9 +2,37 @@
 import { useTemplateRef } from '@usevibejs/ui';
 import { useDroppable } from '../../src/index.ts';
 import AdapterItem from './AdapterItem.vibe';
-const props=defineProps<{id:string;items:string[];reject?:boolean}>();
-const element=useTemplateRef<HTMLElement>('element');
-const drop=useDroppable({id:()=>`zone:${props.id}`,group:()=>props.id,index:()=>props.items.length,element,data:{kind:'container'},accept:source=>source.type==='task' && !props.reject,collisionPriority:0});
-defineExpose({drop});
+const props = defineProps<{ id: string; items: string[]; reject?: boolean }>();
+const element = useTemplateRef<HTMLElement>('element');
+const drop = useDroppable({
+  id: () => `zone:${props.id}`,
+  group: () => props.id,
+  index: () => props.items.length,
+  element,
+  data: { kind: 'container' },
+  accept: (source) => source.type === 'task' && !props.reject,
+  collisionPriority: 0,
+});
+defineExpose({ drop });
 </script>
-<template><section ref="element" :data-zone="id" :data-eligible="drop.isEligible.value" :data-over="drop.isOver.value"><h2>{{ id }}</h2><ul><AdapterItem v-for="(id,index) in items" :key="id" :id="id" :index="index" :group="$props.id" :disabled="id==='locked'" /></ul><p v-if="!items.length">Drop here</p></section></template>
+<template>
+  <section
+    ref="element"
+    :data-zone="id"
+    :data-eligible="drop.isEligible.value"
+    :data-over="drop.isOver.value"
+  >
+    <h2>{{ id }}</h2>
+    <ul>
+      <AdapterItem
+        v-for="(id, index) in items"
+        :key="id"
+        :id="id"
+        :index="index"
+        :group="$props.id"
+        :disabled="id === 'locked'"
+      />
+    </ul>
+    <p v-if="!items.length">Drop here</p>
+  </section>
+</template>

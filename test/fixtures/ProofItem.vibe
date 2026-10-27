@@ -6,10 +6,41 @@ const props = defineProps<{ id: string; index: number; group: string; manager: D
 const el = useTemplateRef<HTMLElement>('el');
 const handle = useTemplateRef<HTMLButtonElement>('handle');
 let entity: Sortable | undefined;
-onMounted(() => { entity = new Sortable({ id: props.id, index: props.index, group: props.group, element: el.value!, handle: handle.value!, plugins: [SortableKeyboardPlugin], transition: null }, props.manager); });
-watchEffect(() => { const index = props.index; const group = props.group; if(entity) { entity.index = index; entity.group = group; } });
+onMounted(() => {
+  entity = new Sortable(
+    {
+      id: props.id,
+      index: props.index,
+      group: props.group,
+      element: el.value!,
+      handle: handle.value!,
+      plugins: [SortableKeyboardPlugin],
+      transition: null,
+    },
+    props.manager,
+  );
+});
+watchEffect(() => {
+  const index = props.index;
+  const group = props.group;
+  if (entity) {
+    entity.index = index;
+    entity.group = group;
+  }
+});
 onScopeDispose(() => entity?.destroy());
 const clicks = ref(0);
 import { ref } from '@usevibejs/ui';
 </script>
-<template><li ref="el" :data-id="id"><button ref="handle" type="button" :aria-label="'Move ' + id" style="touch-action:none; padding:12px">⠿ {{ id }}</button><button type="button" @click="clicks++">Clicks {{ clicks }}</button></li></template>
+<template>
+  <li ref="el" :data-id="id">
+    <button
+      ref="handle"
+      type="button"
+      :aria-label="'Move ' + id"
+      style="touch-action: none; padding: 12px"
+    >
+      ⠿ {{ id }}</button
+    ><button type="button" @click="clicks++">Clicks {{ clicks }}</button>
+  </li>
+</template>

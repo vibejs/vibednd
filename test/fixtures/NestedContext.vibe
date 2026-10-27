@@ -1,0 +1,7 @@
+<script setup lang="ts">
+import { useDnd } from '../../src/index.ts';
+import ContextChild from './ContextChild.vibe';
+const context = useDnd();
+defineExpose({ context });
+</script>
+<template><ContextChild /></template>

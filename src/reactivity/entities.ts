@@ -7,19 +7,19 @@ import {
   watch,
   watchEffect,
   type ShallowRef,
-} from "@usevibejs/ui";
-import { Draggable, Droppable, type DraggableInput, type DroppableInput } from "@dnd-kit/dom";
-import { defaultCollisionDetection } from "@dnd-kit/collision";
-import { Sortable, SortableKeyboardPlugin, type SortableInput } from "@dnd-kit/dom/sortable";
-import type { Type, Modifiers, CollisionDetector, CollisionPriority } from "@dnd-kit/abstract";
-import type { Sensors } from "@dnd-kit/dom";
+} from '@usevibejs/ui';
+import { Draggable, Droppable, type DraggableInput, type DroppableInput } from '@dnd-kit/dom';
+import { defaultCollisionDetection } from '@dnd-kit/collision';
+import { Sortable, SortableKeyboardPlugin, type SortableInput } from '@dnd-kit/dom/sortable';
+import type { Type, Modifiers, CollisionDetector, CollisionPriority } from '@dnd-kit/abstract';
+import type { Sensors } from '@dnd-kit/dom';
 import {
   assertScope,
   contextInternals,
   setDropPosition,
   useDndContext,
   type DndContext,
-} from "../core/context.ts";
+} from '../core/context.ts';
 import type {
   DndEvent,
   ElementTarget,
@@ -27,7 +27,7 @@ import type {
   Metadata,
   Reactive,
   ReadonlyRef,
-} from "../types.ts";
+} from '../types.ts';
 
 export interface DraggableOptions<T extends object = Metadata> {
   id: Reactive<Identifier>;
@@ -44,23 +44,23 @@ export interface DraggableOptions<T extends object = Metadata> {
 }
 export interface DroppableOptions<T extends object = Metadata> extends Omit<
   DraggableOptions<T>,
-  "handle" | "sensors" | "modifiers"
+  'handle' | 'sensors' | 'modifiers'
 > {
   group?: Reactive<Identifier | undefined>;
   index?: Reactive<number | undefined>;
   /** Business rules run both during collision detection and at final commit. */
-  accept?: DroppableInput<T>["accept"];
+  accept?: DroppableInput<T>['accept'];
   collisionDetector?: Reactive<CollisionDetector | undefined>;
   collisionPriority?: Reactive<CollisionPriority | number | undefined>;
 }
 export interface SortableOptions<T extends object = Metadata>
   extends
-    Omit<DraggableOptions<T>, "disabled">,
-    Pick<DroppableOptions<T>, "accept" | "collisionDetector" | "collisionPriority"> {
+    Omit<DraggableOptions<T>, 'disabled'>,
+    Pick<DroppableOptions<T>, 'accept' | 'collisionDetector' | 'collisionPriority'> {
   index: Reactive<number>;
   group?: Reactive<Identifier | undefined>;
-  disabled?: Reactive<SortableInput<T>["disabled"]>;
-  transition?: Reactive<SortableInput<T>["transition"]>;
+  disabled?: Reactive<SortableInput<T>['disabled']>;
+  transition?: Reactive<SortableInput<T>['transition']>;
 }
 export interface EntityBinding<E> {
   readonly entity: ReadonlyRef<E | null>;
@@ -73,7 +73,7 @@ export interface EntityBinding<E> {
 type Entity<T extends object> = Draggable<T> | Droppable<T> | Sortable<T>;
 type Options<T extends object> = DraggableOptions<T> | DroppableOptions<T> | SortableOptions<T>;
 function binding<T extends object, E extends Entity<T>>(
-  kind: "draggable" | "droppable" | "sortable",
+  kind: 'draggable' | 'droppable' | 'sortable',
   options: Options<T>,
 ): EntityBinding<E> {
   assertScope(`use${kind}`);
@@ -85,6 +85,15 @@ function binding<T extends object, E extends Entity<T>>(
   let id: Identifier | undefined;
   let element: Element | null | undefined;
   let disposed = false;
+  let markedHandle: Element | undefined;
+  let previousMarker: string | null = null;
+  const clearHandle = () => {
+    if (markedHandle) {
+      if (previousMarker === null) markedHandle.removeAttribute('data-vibednd-handle');
+      else markedHandle.setAttribute('data-vibednd-handle', previousMarker);
+    }
+    markedHandle = undefined;
+  };
   const detach = () => {
     const current = entity.value;
     if (!current) return;
@@ -95,6 +104,7 @@ function binding<T extends object, E extends Entity<T>>(
       context.cancel();
     entity.value = null;
     current.destroy();
+    clearHandle();
     unclaim?.();
     unclaim = undefined;
     id = undefined;
@@ -106,12 +116,12 @@ function binding<T extends object, E extends Entity<T>>(
     return {
       id: toValue(options.id),
       element: toValue(options.element),
-      handle: "handle" in options ? (toValue(options.handle) ?? undefined) : undefined,
+      handle: 'handle' in options ? (toValue(options.handle) ?? undefined) : undefined,
       data: toValue(options.data),
       disabled: toValue(options.disabled) ?? false,
       type: toValue(options.type),
-      sensors: "sensors" in options ? toValue(options.sensors) : undefined,
-      modifiers: "modifiers" in options ? toValue(options.modifiers) : undefined,
+      sensors: 'sensors' in options ? toValue(options.sensors) : undefined,
+      modifiers: 'modifiers' in options ? toValue(options.modifiers) : undefined,
       accept: drop.accept,
       collisionDetector: toValue(drop.collisionDetector),
       collisionPriority: toValue(drop.collisionPriority),
@@ -127,7 +137,7 @@ function binding<T extends object, E extends Entity<T>>(
       (next) => {
         if (next !== element) detach();
       },
-      { flush: "sync" },
+      { flush: 'sync' },
     );
     watchEffect(
       () => {
@@ -136,8 +146,8 @@ function binding<T extends object, E extends Entity<T>>(
           detach();
           return;
         }
-        if (kind === "sortable" && (!Number.isInteger(input.index) || input.index < 0))
-          throw new Error("[VibeDND] Sortable index must be a non-negative integer.");
+        if (kind === 'sortable' && (!Number.isInteger(input.index) || input.index < 0))
+          throw new Error('[VibeDND] Sortable index must be a non-negative integer.');
         if (entity.value && (id !== input.id || element !== input.element)) detach();
         if (!entity.value) {
           id = input.id;
@@ -145,7 +155,7 @@ function binding<T extends object, E extends Entity<T>>(
           unclaim = internal.register(kind, id, { element, dispose: detach });
           try {
             entity.value = (
-              kind === "sortable"
+              kind === 'sortable'
                 ? new Sortable(
                     {
                       ...input,
@@ -156,7 +166,7 @@ function binding<T extends object, E extends Entity<T>>(
                     },
                     context.engine,
                   )
-                : kind === "draggable"
+                : kind === 'draggable'
                   ? new Draggable(
                       { ...input, element, disabled: !!input.disabled } as DraggableInput<T>,
                       context.engine,
@@ -177,11 +187,22 @@ function binding<T extends object, E extends Entity<T>>(
         current.disabled = input.disabled as never;
         current.type = input.type;
         if (current instanceof Draggable || current instanceof Sortable) {
+          if (
+            current instanceof Draggable &&
+            current.isDragSource &&
+            current.handle !== input.handle
+          )
+            context.cancel();
           current.handle = input.handle;
           current.sensors = input.sensors;
           current.modifiers = input.modifiers;
-          if (input.handle)
-            input.handle.setAttribute("data-vibednd-handle", `${typeof input.id}:${input.id}`);
+          const activator = input.handle ?? input.element;
+          if (activator !== markedHandle) {
+            clearHandle();
+            markedHandle = activator;
+            previousMarker = activator.getAttribute('data-vibednd-handle');
+          }
+          activator.setAttribute('data-vibednd-handle', `${typeof input.id}:${input.id}`);
         }
         if (current instanceof Droppable || current instanceof Sortable) {
           setDropPosition(current, input.index, input.group);
@@ -208,17 +229,15 @@ function binding<T extends object, E extends Entity<T>>(
               : null;
         if (draggable?.disabled && draggable.isDragSource) context.cancel();
       },
-      { flush: "post" },
+      { flush: 'post' },
     );
   });
   const stopEvents = context.monitor({
     onDragStart(event) {
-      if (event.operation.source?.id === toValue(options.id))
-        options.onDragStart?.(event as DndEvent<T, object>);
+      if (event.operation.source?.id === id) options.onDragStart?.(event as DndEvent<T, object>);
     },
     onDragEnd(event) {
-      if (event.operation.source?.id === toValue(options.id))
-        options.onDragEnd?.(event as DndEvent<T, object>);
+      if (event.operation.source?.id === id) options.onDragEnd?.(event as DndEvent<T, object>);
     },
   });
   const removeHook = internal.onDispose(() => dispose());
@@ -254,7 +273,7 @@ function binding<T extends object, E extends Entity<T>>(
     }),
     disabled: computed(() => {
       const value = toValue(options.disabled);
-      return typeof value === "object" ? !!value.draggable : !!value;
+      return typeof value === 'object' ? !!value.draggable : !!value;
     }),
     dispose,
   };
@@ -262,15 +281,15 @@ function binding<T extends object, E extends Entity<T>>(
 export function useDraggable<T extends object = Metadata>(
   options: DraggableOptions<T>,
 ): EntityBinding<Draggable<T>> {
-  return binding<T, Draggable<T>>("draggable", options);
+  return binding<T, Draggable<T>>('draggable', options);
 }
 export function useDroppable<T extends object = Metadata>(
   options: DroppableOptions<T>,
 ): EntityBinding<Droppable<T>> {
-  return binding<T, Droppable<T>>("droppable", options);
+  return binding<T, Droppable<T>>('droppable', options);
 }
 export function useSortable<T extends object = Metadata>(
   options: SortableOptions<T>,
 ): EntityBinding<Sortable<T>> {
-  return binding<T, Sortable<T>>("sortable", options);
+  return binding<T, Sortable<T>>('sortable', options);
 }
