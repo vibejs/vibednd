@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { platform, arch, cpus } from 'node:os';
 const server = spawn(
@@ -142,6 +142,7 @@ try {
     results,
   };
   writeFileSync('benchmarks/results.json', JSON.stringify(report, null, 2) + '\n');
+  execFileSync('node_modules/.bin/oxfmt', ['benchmarks/results.json'], { stdio: 'pipe' });
   console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser?.close();
