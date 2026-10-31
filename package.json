@@ -40,7 +40,8 @@
     "bench": "node benchmarks/run.ts",
     "check": "oxfmt --check && node scripts/format-vibe.ts && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm build:site",
     "changeset": "changeset",
-    "verify": "pnpm check && pnpm test:browser && pnpm test:package"
+    "verify": "pnpm check && pnpm test:browser && pnpm test:package",
+    "version-packages": "changeset version && pnpm install --lockfile-only"
   },
   "dependencies": {
     "@dnd-kit/abstract": "0.5.1",
